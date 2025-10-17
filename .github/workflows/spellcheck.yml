@@ -1,0 +1,15 @@
+name: Spellcheck
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  codespell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: codespell-project/actions-codespell@v2
+        with:
+          check_filenames: true
+          skip: ".git,dist,node_modules"
+          ignore_words_list: kydras
