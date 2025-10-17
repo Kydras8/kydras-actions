@@ -44,3 +44,4 @@ jobs:
           if npm pkg get scripts.test | grep -qv 'null'; then \
             ${{ steps.pm.outputs.mgr }} test --if-present -- --ci; \
           else echo "No test script"; fi
+
