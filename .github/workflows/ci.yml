@@ -1,0 +1,46 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect package manager
+        id: pm
+        run: |
+          if [ -f pnpm-lock.yaml ]; then echo "mgr=pnpm" >> $GITHUB_OUTPUT
+          elif [ -f yarn.lock ]; then echo "mgr=yarn" >> $GITHUB_OUTPUT
+          else echo "mgr=npm" >> $GITHUB_OUTPUT; fi
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: ${{ steps.pm.outputs.mgr }}
+
+      - if: steps.pm.outputs.mgr == 'pnpm'
+        run: corepack enable && pnpm i --frozen-lockfile
+
+      - if: steps.pm.outputs.mgr == 'yarn'
+        run: corepack enable && yarn --frozen-lockfile
+
+      - if: steps.pm.outputs.mgr == 'npm'
+        run: npm ci
+
+      - name: Lint
+        run: |
+          if npm pkg get scripts.lint | grep -qv 'null'; then \
+            ${{ steps.pm.outputs.mgr }} run lint; \
+          else echo "No lint script"; fi
+
+      - name: Test
+        run: |
+          if npm pkg get scripts.test | grep -qv 'null'; then \
+            ${{ steps.pm.outputs.mgr }} test --if-present -- --ci; \
+          else echo "No test script"; fi
